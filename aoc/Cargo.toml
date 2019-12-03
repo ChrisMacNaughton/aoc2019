@@ -1,5 +1,5 @@
 [package]
-name = "intcode"
+name = "aoc"
 version = "0.1.0"
 authors = ["Chris MacNaughton <chris@centauri.solutions>"]
 edition = "2018"
