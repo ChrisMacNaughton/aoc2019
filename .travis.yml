@@ -12,8 +12,10 @@ matrix:
     - rust: nightly
 
 env:
+  # Libraries
+  - DAY=intcode
+  # Days
   - DAY=day1
-
+  - DAY=day2
 script:
-  - cargo build --verbose --manifest-path=$DAY/Cargo.toml
-  - cargo test --manifest-path=$DAY/Cargo.toml
+  - cargo test --verbose --manifest-path=$DAY/Cargo.toml
