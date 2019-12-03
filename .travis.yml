@@ -15,5 +15,5 @@ env:
   - DAY=day1
 
 script:
-  - cargo build --test --verbose --manifest-path=$DAY/Cargo.toml
+  - cargo build --verbose --manifest-path=$DAY/Cargo.toml
   - cargo test --manifest-path=$DAY/Cargo.toml
