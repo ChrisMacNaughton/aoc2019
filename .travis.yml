@@ -10,12 +10,12 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+
 jobs:
   include:
   - name: "Day 1"
     env: DAY=day1
 
 script:
-  - cd $DAY
-  - cargo build --test --verbose
-  - cargo test
+  - cargo build --test --verbose --manifest-path=$DAY
+  - cargo test --manifest-path=$DAY
