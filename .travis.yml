@@ -1,0 +1,21 @@
+language: rust
+
+sudo: false
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  allow_failures:
+    - rust: nightly
+jobs:
+  include:
+  - name: "Day 1"
+    env: DAY=day1
+
+script:
+  - cd $DAY
+  - cargo build --test --verbose
+  - cargo test
