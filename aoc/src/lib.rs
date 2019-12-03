@@ -29,3 +29,12 @@ pub fn day2_input() -> Vec<usize> {
         .map(|i| i.parse().unwrap())
         .collect()
 }
+
+pub fn day3_input() -> Vec<Vec<String>> {
+    let input = read_file("../data/day3.txt");
+    input
+        .trim()
+        .split('\n')
+        .map(|i| i.split(",").map(String::from).collect())
+        .collect()
+}
