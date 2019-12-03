@@ -17,5 +17,6 @@ env:
   # Days
   - DAY=day1
   - DAY=day2
+  - DAY=day3
 script:
   - cargo test --verbose --manifest-path=$DAY/Cargo.toml
