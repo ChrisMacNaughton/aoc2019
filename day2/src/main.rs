@@ -1,6 +1,6 @@
 use intcode::Intcode;
 
-fn find_output(program: &[usize], desired: usize) -> (usize, usize) {
+fn find_output(program: &[isize], desired: isize) -> (isize, isize) {
     for noun in 0..=99 {
         for verb in 0..=99 {
             let mut int = Intcode::new(program.to_vec());

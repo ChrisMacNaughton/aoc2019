@@ -21,7 +21,7 @@ pub fn day1_input() -> Vec<usize> {
         .collect()
 }
 
-pub fn day2_input() -> Vec<usize> {
+pub fn day2_input() -> Vec<isize> {
     let input = read_file("../data/day2.txt");
     input
         .trim()
@@ -36,5 +36,14 @@ pub fn day3_input() -> Vec<Vec<String>> {
         .trim()
         .split('\n')
         .map(|i| i.split(",").map(String::from).collect())
+        .collect()
+}
+
+pub fn day5_input() -> Vec<isize> {
+    let input = read_file("../data/day5.txt");
+    input
+        .trim()
+        .split(',')
+        .map(|i| i.parse().unwrap())
         .collect()
 }
