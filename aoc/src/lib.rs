@@ -47,3 +47,8 @@ pub fn day5_input() -> Vec<isize> {
         .map(|i| i.parse().unwrap())
         .collect()
 }
+
+pub fn day6_input() -> Vec<String> {
+    let input = read_file("../data/day6.txt");
+    input.trim().split('\n').map(String::from).collect()
+}
