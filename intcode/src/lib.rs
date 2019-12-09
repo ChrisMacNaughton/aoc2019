@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -45,39 +43,58 @@ mod tests {
 }
 
 pub struct Intcode {
-    pub memory: Vec<usize>,
+    pub memory: Vec<isize>,
     ip: usize,
 }
 
 impl Intcode {
-    pub fn new(memory: Vec<usize>) -> Intcode {
+    pub fn new(memory: Vec<isize>) -> Intcode {
         Intcode { memory, ip: 0 }
     }
 
     pub fn run(&mut self) {
         loop {
-            match self.current_op() {
-                OpCode::Add => self.add(),
-                OpCode::Mul => self.mul(),
-                OpCode::End => return,
+            // eprintln!("PC: {}", self.ip);
+            let instruction = self.get(self.ip);
+            // eprintln!("Instruction: {}", instruction);
+            let mode1 = match instruction / 100 % 10 {
+                1 => Mode::Immediate,
+                _ => Mode::Position,
+            };
+            let mode2 = match instruction / 1_000 % 10 {
+                1 => Mode::Immediate,
+                _ => Mode::Position,
+            };
+            let opcode = instruction % 100;
+            // eprintln!("Opcode: {}", opcode);
+            match opcode {
+                1 => self.add(mode1, mode2),
+                2 => self.mul(mode1, mode2),
+                3 => self.get_op(),
+                4 => self.put_op(mode1),
+                5 => self.jmp_true(mode1, mode2),
+                6 => self.jmp_false(mode1, mode2),
+                7 => self.lt(mode1, mode2),
+                8 => self.eq(mode1, mode2),
+                99 => return,
+                // _ => panic!("Invalid opcode: {}", opcode),
+                _ => {
+                    println!("Invalid opcode {}", opcode);
+                    self.step(1);
+                }
             }
         }
     }
 
-    fn current_op(&self) -> OpCode {
-        OpCode::try_from(&self.get(self.ip))
-            .expect(&format!("Incalid opcode ({})!", self.get(self.ip)))
-    }
-
-    pub fn get(&self, position: usize) -> usize {
+    pub fn get(&self, position: usize) -> isize {
         self.memory[position]
     }
 
-    pub fn set(&mut self, position: usize, value: usize) {
+    pub fn set(&mut self, position: usize, value: isize) {
         self.memory[position] = value;
     }
 
-    fn arg(&mut self, offset: usize) -> usize {
+    fn arg(&mut self, offset: usize) -> isize {
         self.get(self.ip + offset)
     }
 
@@ -85,41 +102,177 @@ impl Intcode {
         self.ip += step;
     }
 
-    fn add(&mut self) {
-        let pos1 = self.arg(1);
-        let pos2 = self.arg(2);
+    fn add(&mut self, mode1: Mode, mode2: Mode) {
+        let pos1 = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        let pos2 = match mode2 {
+            Mode::Position => {
+                let pos = self.arg(2);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(2),
+        };
         let destination = self.arg(3);
-
-        self.set(destination, self.get(pos1) + self.get(pos2));
+        // eprintln!("Set {} to {} + {}", destination, pos1, pos2);
+        self.set(destination as usize, pos1 + pos2);
         self.step(4);
     }
 
-    fn mul(&mut self) {
-        let pos1 = self.arg(1);
-        let pos2 = self.arg(2);
+    fn mul(&mut self, mode1: Mode, mode2: Mode) {
+        let pos1 = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        let pos2 = match mode2 {
+            Mode::Position => {
+                let pos = self.arg(2);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(2),
+        };
         let destination = self.arg(3);
 
-        self.set(destination, self.get(pos1) * self.get(pos2));
+        // eprintln!("Set {} to {} * {}", destination, pos1, pos2);
+        self.set(destination as usize, pos1 * pos2);
+        self.step(4);
+    }
+
+    fn get_op(&mut self) {
+        let mut line = String::new();
+        println!("INPUT: ");
+        std::io::stdin().read_line(&mut line).unwrap();
+        // line = line.trim();
+        let destination = self.arg(1);
+
+        // eprintln!("Set {} to {} (from INPUT)", destination, line);
+        self.set(destination as usize, line.trim().parse().unwrap());
+        self.step(2);
+    }
+
+    fn put_op(&mut self, mode: Mode) {
+        let val = match mode {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        println!("{}", val);
+        self.step(2);
+    }
+
+    fn jmp_true(&mut self, mode1: Mode, mode2: Mode) {
+        let val = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+
+        // eprintln!("Jump to {} if {} != 0", self.arg(2), val);
+        if val != 0 {
+            let pos = match mode2 {
+                Mode::Position => {
+                    let pos = self.arg(2);
+                    self.get(pos as usize)
+                }
+                Mode::Immediate => self.arg(2),
+            };
+            self.ip = pos as usize;
+        // self.ip = self.arg(2) as usize;
+        } else {
+            self.step(3);
+        }
+    }
+
+    fn jmp_false(&mut self, mode1: Mode, mode2: Mode) {
+        let val = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        // eprintln!("Jump to {} if {} == 0", self.arg(2), val);
+        if val == 0 {
+            let pos = match mode2 {
+                Mode::Position => {
+                    let pos = self.arg(2);
+                    self.get(pos as usize)
+                }
+                Mode::Immediate => self.arg(2),
+            };
+            self.ip = pos as usize;
+        // self.ip = self.arg(2) as usize;
+        } else {
+            self.step(3);
+        }
+    }
+
+    fn lt(&mut self, mode1: Mode, mode2: Mode) {
+        let val1 = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        let val2 = match mode2 {
+            Mode::Position => {
+                let pos = self.arg(2);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(2),
+        };
+
+        let pos3 = self.arg(3);
+        // eprintln!("set {} to 1 if {} < {}", pos3, val1, val2);
+        if val1 < val2 {
+            self.set(pos3 as usize, 1);
+        } else {
+            self.set(pos3 as usize, 0);
+        }
+        self.step(4);
+    }
+
+    fn eq(&mut self, mode1: Mode, mode2: Mode) {
+        let val1 = match mode1 {
+            Mode::Position => {
+                let pos = self.arg(1);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(1),
+        };
+        let val2 = match mode2 {
+            Mode::Position => {
+                let pos = self.arg(2);
+                self.get(pos as usize)
+            }
+            Mode::Immediate => self.arg(2),
+        };
+
+        let pos3 = self.arg(3);
+        // eprintln!("set {} to 1 if {} == {}", pos3, val1, val2);
+        if val1 == val2 {
+            self.set(pos3 as usize, 1);
+        } else {
+            self.set(pos3 as usize, 0);
+        }
         self.step(4);
     }
 }
 
 #[derive(Debug)]
-enum OpCode {
-    Add,
-    Mul,
-    End,
-}
-
-impl TryFrom<&usize> for OpCode {
-    type Error = String;
-
-    fn try_from(input: &usize) -> Result<OpCode, Self::Error> {
-        match input {
-            1 => Ok(OpCode::Add),
-            2 => Ok(OpCode::Mul),
-            99 => Ok(OpCode::End),
-            _ => Err(format!("Invalid OpCode: {}", input)),
-        }
-    }
+enum Mode {
+    Position,
+    Immediate,
 }
